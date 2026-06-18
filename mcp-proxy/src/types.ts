@@ -1,0 +1,70 @@
+// Transport types
+export type Transport = 'stdio' | 'sse';
+
+// Server auth config
+export interface ServerAuth {
+  type: 'bearer' | 'basic' | 'api_key';
+  token_env?: string;
+  keys_env?: string;
+}
+
+// Server config (from config.yaml)
+export interface ServerConfig {
+  name: string;
+  transport: Transport;
+  command?: string[];      // stdio only
+  url?: string;            // sse only
+  auth?: ServerAuth;
+  tools: string[];
+  tags: string[];
+}
+
+// Router config
+export interface LLMPruneConfig {
+  enabled: boolean;
+  threshold: number;       // default 20
+  model: string;           // e.g. claude-haiku-4-5-20251001
+  api_key_env: string;
+}
+
+export interface RouterConfig {
+  llm_prune: LLMPruneConfig;
+}
+
+// Proxy config
+export interface ProxyAuthConfig {
+  type: 'api_key';
+  keys_env: string;
+}
+
+export interface ProxyConfig {
+  servers: ServerConfig[];
+  router: RouterConfig;
+  proxy: {
+    mcp_port: number;      // default 3000
+    http_port: number;     // default 3001
+    auth?: ProxyAuthConfig;
+  };
+}
+
+// Backend server runtime state
+export type HealthStatus = 'healthy' | 'unhealthy' | 'unknown';
+
+export interface BackendServer {
+  config: ServerConfig;
+  health: HealthStatus;
+}
+
+// Tool entry (runtime, from registry)
+export interface ToolEntry {
+  name: string;
+  serverName: string;
+  tags: string[];
+  description?: string;
+}
+
+// Router result
+export interface RouterResult {
+  serverName: string;
+  matchedBy: 'exact' | 'rule' | 'llm';
+}

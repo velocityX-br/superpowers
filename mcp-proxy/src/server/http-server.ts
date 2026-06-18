@@ -5,19 +5,13 @@ import { Router } from '../router/router';
 import { ConnectionPool } from '../pool/connection-pool';
 import { ProxyConfig } from '../types';
 
-// ConnectionPool is currently a stub; declare the method we use here so TypeScript
-// is satisfied without touching the pool source.
-interface PoolWithCallTool {
-  callTool(serverName: string, toolName: string, args: unknown): Promise<unknown>;
-}
-
 export class HttpServer {
   /** The Express application — exposed so tests can pass it to supertest directly. */
   public readonly app: Application;
 
   private readonly registry: BackendRegistry;
   private readonly router: Router;
-  private readonly pool: PoolWithCallTool;
+  private readonly pool: ConnectionPool;
   private readonly config: ProxyConfig;
   private httpServer: http.Server | null = null;
 
@@ -29,7 +23,7 @@ export class HttpServer {
   ) {
     this.registry = registry;
     this.router = router;
-    this.pool = pool as unknown as PoolWithCallTool;
+    this.pool = pool;
     this.config = config;
 
     this.app = express();
@@ -109,17 +103,14 @@ export class HttpServer {
 
     // POST /tools/:name/call — invoke a specific tool
     this.app.post('/tools/:name/call', async (req: Request, res: Response) => {
-      const toolName = req.params['name'];
-      const args: unknown = req.body?.arguments ?? {};
-
-      const routeResult = this.router.routeToolCall(toolName);
-      if (routeResult === null) {
-        res.status(404).json({ error: `Tool not found: ${toolName}` });
-        return;
-      }
-
+      const toolName = req.params['name']!;
       try {
-        const result = await this.pool.callTool(routeResult.serverName, toolName, args);
+        const routeResult = this.router.routeToolCall(toolName);
+        if (routeResult === null) {
+          res.status(404).json({ error: `Tool not found: ${toolName}` });
+          return;
+        }
+        const result = await this.pool.callTool(routeResult.serverName, toolName, req.body ?? {});
         res.json({ result });
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);

@@ -60,15 +60,10 @@ function makeRouter(registry: jest.Mocked<BackendRegistry>): jest.Mocked<Router>
   } as unknown as jest.Mocked<Router>;
 }
 
-// ConnectionPool is a stub at this stage; we augment it with callTool for testing.
-interface TestPool extends ConnectionPool {
-  callTool: jest.MockedFunction<(serverName: string, toolName: string, args: unknown) => Promise<unknown>>;
-}
-
-function makePool(): TestPool {
+function makePool(): jest.Mocked<ConnectionPool> {
   return {
     callTool: jest.fn().mockResolvedValue({ content: [{ type: 'text', text: 'ok' }] }),
-  } as unknown as TestPool;
+  } as unknown as jest.Mocked<ConnectionPool>;
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -77,7 +72,7 @@ describe('HttpServer', () => {
   let server: HttpServer;
   let registry: jest.Mocked<BackendRegistry>;
   let router: jest.Mocked<Router>;
-  let pool: TestPool;
+  let pool: jest.Mocked<ConnectionPool>;
 
   beforeEach(async () => {
     registry = makeRegistry();
@@ -128,7 +123,7 @@ describe('HttpServer', () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('result');
     expect(res.body.result).toEqual(expectedResult);
-    expect(pool.callTool).toHaveBeenCalledWith('filesystem', 'read_file', args);
+    expect(pool.callTool).toHaveBeenCalledWith('filesystem', 'read_file', { arguments: args });
   });
 
   // ── 5. POST /tools/:name/call → 404 when tool not found ───────────────────
@@ -140,6 +135,21 @@ describe('HttpServer', () => {
     expect(res.status).toBe(404);
     expect(res.body).toHaveProperty('error');
     expect(res.body.error).toContain('no_such_tool');
+  });
+
+  // ── 5b. POST /tools/:name/call → 500 when routeToolCall throws synchronously
+  it('POST /tools/:name/call returns 500 when routeToolCall throws synchronously', async () => {
+    router.routeToolCall.mockImplementationOnce(() => {
+      throw new Error('router internal failure');
+    });
+
+    const res = await request(server.app)
+      .post('/tools/read_file/call')
+      .send({ arguments: {} });
+
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('error');
+    expect(res.body.error).toContain('router internal failure');
   });
 
   // ── 6. GET /servers ─────────────────────────────────────────────────────────
@@ -173,7 +183,7 @@ describe('HttpServer with auth', () => {
   let server: HttpServer;
   let registry: jest.Mocked<BackendRegistry>;
   let router: jest.Mocked<Router>;
-  let pool: TestPool;
+  let pool: jest.Mocked<ConnectionPool>;
 
   beforeEach(async () => {
     process.env[KEYS_ENV] = `${VALID_KEY},another-key`;

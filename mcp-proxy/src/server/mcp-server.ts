@@ -13,7 +13,7 @@ import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { BackendRegistry } from '../registry/backend-registry';
 import { Router } from '../router/router';
 import { ConnectionPool } from '../pool/connection-pool';
-import { ProxyConfig } from '../types';
+import { ProxyConfig, ToolCallResult } from '../types';
 
 export class McpServer {
   private readonly server: Server;
@@ -99,15 +99,11 @@ export class McpServer {
           );
         }
 
-        const result = await this.pool.callTool(routeResult.serverName, toolName, args ?? {});
-
-        // result is the raw response from the backend; cast it as the MCP response shape.
-        // The backend returns a value shaped like { content: [...] } (standard MCP call result).
-        const callResult = result as { content?: unknown[]; isError?: boolean; [k: string]: unknown };
+        const result: ToolCallResult = await this.pool.callTool(routeResult.serverName, toolName, args ?? {});
 
         return {
-          content: callResult.content ?? [],
-          isError: callResult.isError ?? false,
+          content: result.content ?? [],
+          isError: result.isError ?? false,
         };
       } catch (err) {
         // Re-throw McpError instances as-is (they carry the correct error code)
@@ -128,10 +124,10 @@ export class McpServer {
     });
 
     // resources/read — v1 stub: not found
-    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    this.server.setRequestHandler(ReadResourceRequestSchema, async (_request) => {
       throw new McpError(
-        ErrorCode.InvalidRequest,
-        `Resource not found: ${request.params.uri}`,
+        ErrorCode.MethodNotFound,
+        'Resource reading is not supported in this version',
       );
     });
   }

@@ -75,3 +75,9 @@ export interface RouterResult {
   serverName: string;
   matchedBy: 'exact' | 'rule' | 'llm';
 }
+
+// Result returned by ConnectionPool.callTool — matches MCP tools/call response shape
+export interface ToolCallResult {
+  content?: Array<{ type: string; text?: string; [key: string]: unknown }>;
+  isError?: boolean;
+}

@@ -198,3 +198,26 @@ describe('McpServer resources/list', () => {
     }
   });
 });
+
+// ── 7. resources/read — MethodNotFound ───────────────────────────────────────
+
+describe('McpServer resources/read', () => {
+  it('resources/read throws MethodNotFound', async () => {
+    const mockRouter = {
+      getToolsList: jest.fn().mockResolvedValue([]),
+      routeToolCall: jest.fn(),
+    };
+    const mockPool = { callTool: jest.fn() };
+
+    const { client, mcpServer } = await buildPair(mockRouter, mockPool);
+    try {
+      await expect(
+        client.readResource({ uri: 'file:///test.txt' })
+      ).rejects.toMatchObject({
+        code: ErrorCode.MethodNotFound,
+      });
+    } finally {
+      await mcpServer.stop();
+    }
+  });
+});

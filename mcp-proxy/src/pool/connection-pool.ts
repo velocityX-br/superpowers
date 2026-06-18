@@ -1,4 +1,4 @@
-import { ProxyConfig, ServerConfig } from '../types';
+import { ProxyConfig, ServerConfig, ToolCallResult } from '../types';
 import { BackendRegistry } from '../registry/backend-registry';
 import { StdioConnection } from './stdio-connection';
 import { SseConnection } from './sse-connection';
@@ -48,9 +48,9 @@ export class ConnectionPool {
    * Forward a tool call to the correct backend.
    * The tool call is expressed as an MCP `tools/call` JSON-RPC request.
    */
-  async callTool(serverName: string, toolName: string, args: unknown): Promise<unknown> {
+  async callTool(serverName: string, toolName: string, args: unknown): Promise<ToolCallResult> {
     const conn = await this.getConnection(serverName);
-    return conn.request('tools/call', { name: toolName, arguments: args });
+    return conn.request('tools/call', { name: toolName, arguments: args }) as Promise<ToolCallResult>;
   }
 
   /** Disconnect all active backend connections. */

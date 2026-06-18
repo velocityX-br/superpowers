@@ -5,7 +5,6 @@ export type Transport = 'stdio' | 'sse';
 export interface ServerAuth {
   type: 'bearer' | 'basic' | 'api_key';
   token_env?: string;
-  keys_env?: string;
 }
 
 // Server config (from config.yaml)
@@ -15,7 +14,7 @@ export interface ServerConfig {
   command?: string[];      // stdio only
   url?: string;            // sse only
   auth?: ServerAuth;
-  tools: string[];
+  tools?: string[];    // if omitted, expose all tools from this server
   tags: string[];
 }
 

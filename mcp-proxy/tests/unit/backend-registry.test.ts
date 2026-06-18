@@ -248,6 +248,35 @@ describe('BackendRegistry', () => {
     });
   });
 
+  // ─── 10. Duplicate tool name collision ────────────────────────────────────
+  describe('duplicate tool names across servers', () => {
+    it('first-server wins when two servers declare the same tool name', () => {
+      const config = makeConfig([
+        { name: 'server-a', tools: ['shared_tool', 'tool-a'], tags: [] },
+        { name: 'server-b', tools: ['shared_tool', 'tool-b'], tags: [] },
+      ]);
+      const registry = new BackendRegistry(config);
+
+      expect(registry.getToolOwner('shared_tool')).toBe('server-a');
+      expect(registry.getToolOwner('tool-a')).toBe('server-a');
+      expect(registry.getToolOwner('tool-b')).toBe('server-b');
+    });
+
+    it('emits a console.warn for each duplicated tool name', () => {
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const config = makeConfig([
+        { name: 'server-a', tools: ['shared_tool'], tags: [] },
+        { name: 'server-b', tools: ['shared_tool'], tags: [] },
+      ]);
+      new BackendRegistry(config);
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('"shared_tool"')
+      );
+      warnSpy.mockRestore();
+    });
+  });
+
   // ─── ToolEntry shape ───────────────────────────────────────────────────────
   describe('ToolEntry shape', () => {
     it('description is undefined when not set (not in config)', () => {

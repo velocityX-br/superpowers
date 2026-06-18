@@ -11,16 +11,37 @@ export class BackendRegistry {
     for (const serverConfig of config.servers) {
       const server: BackendServer = {
         config: serverConfig,
-        health: 'unknown' as HealthStatus,
+        health: 'unknown' satisfies HealthStatus,
       };
       this.servers.set(serverConfig.name, server);
 
       // Populate tool → server mapping from the config's tool list.
       // When tools is undefined/empty the config says "expose all"; at registry
       // level we have no tool names to index — they'll be discovered on connect.
+      // First-writer-wins: only map a tool name to the first server that declares it.
       if (serverConfig.tools && serverConfig.tools.length > 0) {
         for (const toolName of serverConfig.tools) {
-          this.toolOwnerMap.set(toolName, serverConfig.name);
+          if (!this.toolOwnerMap.has(toolName)) {
+            this.toolOwnerMap.set(toolName, serverConfig.name);
+          }
+        }
+      }
+    }
+
+    // Detect duplicate tool names across servers and warn about them.
+    const seenTools = new Map<string, string>(); // toolName → first serverName
+    for (const server of config.servers) {
+      if (!server.tools || server.tools.length === 0) continue;
+      for (const toolName of server.tools) {
+        if (seenTools.has(toolName)) {
+          const firstServer = seenTools.get(toolName)!;
+          console.warn(
+            `[BackendRegistry] Duplicate tool name "${toolName}" found in servers ` +
+            `"${firstServer}" and "${server.name}". ` +
+            `"${firstServer}" will be used for routing.`
+          );
+        } else {
+          seenTools.set(toolName, server.name);
         }
       }
     }

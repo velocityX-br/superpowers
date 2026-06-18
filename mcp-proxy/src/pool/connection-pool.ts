@@ -18,6 +18,15 @@ export class ConnectionPool {
    * If the cached connection is unhealthy a fresh one is created.
    */
   async getConnection(serverName: string): Promise<Connection> {
+    // Check registry first — if server is permanently unhealthy, don't try to reconnect
+    const serverState = this.registry.getServer(serverName);
+    if (!serverState) {
+      throw new Error(`Server not found: ${serverName}`);
+    }
+    if (serverState.health === 'unhealthy') {
+      throw new Error(`Server "${serverName}" is unhealthy and not available`);
+    }
+
     const existing = this.connections.get(serverName);
     if (existing && existing.isHealthy) {
       return existing;

@@ -91,7 +91,7 @@ export class StdioConnection {
 
     this._crashCount++;
 
-    if (this._crashCount >= MAX_RESTARTS) {
+    if (this._crashCount > MAX_RESTARTS) {
       this._healthy = false;
       this.registry.markUnhealthy(this.config.name);
       return;
@@ -122,7 +122,7 @@ export class StdioConnection {
     if (!this._child) return;
 
     // Prevent the exit handler from triggering restarts
-    this._crashCount = MAX_RESTARTS;
+    this._crashCount = MAX_RESTARTS + 1;
 
     const child = this._child;
     this._child = null;

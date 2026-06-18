@@ -141,15 +141,15 @@ describe('StdioConnection', () => {
     expect(result).toEqual({ tools: [] });
   });
 
-  it('marks unhealthy after 3 crashes', async () => {
+  it('marks unhealthy after 3 restarts (4th crash)', async () => {
     const conn = new StdioConnection(serverConfig, registry);
     const connectPromise = conn.connect();
     mockChild.emit('spawn');
     await connectPromise;
 
-    // Each crash triggers a reconnect attempt; we need a new mock child for each
+    // Each crash triggers a reconnect attempt; we need a new mock child for each restart
     const children: MockChildProcess[] = [mockChild];
-    for (let i = 1; i < 4; i++) {
+    for (let i = 1; i <= 3; i++) {
       const c = new MockChildProcess();
       children.push(c);
     }
@@ -164,20 +164,29 @@ describe('StdioConnection', () => {
       return child;
     });
 
-    // Crash 1
+    // Crash 1 → restart 1 (spawns children[1])
     mockChild.crash();
     await new Promise((r) => setImmediate(r));
     children[1].emit('spawn');
     await new Promise((r) => setImmediate(r));
 
-    // Crash 2
+    // Crash 2 → restart 2 (spawns children[2])
     children[1].crash();
     await new Promise((r) => setImmediate(r));
     children[2].emit('spawn');
     await new Promise((r) => setImmediate(r));
 
-    // Crash 3
+    // Crash 3 → restart 3 (spawns children[3])
     children[2].crash();
+    await new Promise((r) => setImmediate(r));
+    children[3].emit('spawn');
+    await new Promise((r) => setImmediate(r));
+
+    // Still healthy after 3 restarts
+    expect(conn.isHealthy).toBe(true);
+
+    // Crash 4 → no more restarts, marks unhealthy
+    children[3].crash();
     await new Promise((r) => setImmediate(r));
 
     expect(conn.isHealthy).toBe(false);
@@ -415,6 +424,16 @@ describe('ConnectionPool', () => {
     const pool = new ConnectionPool(config, registry);
     await expect(pool.callTool('unknown-server', 'some_tool', {})).rejects.toThrow(
       /unknown-server/,
+    );
+  });
+
+  // 5b. permanently unhealthy server throws
+  it('getConnection throws when the server is permanently unhealthy in the registry', async () => {
+    const pool = new ConnectionPool(config, registry);
+    // Mark the server unhealthy in the registry (simulates exhausted retries)
+    registry.markUnhealthy('fs');
+    await expect(pool.getConnection('fs')).rejects.toThrow(
+      /unhealthy/,
     );
   });
 

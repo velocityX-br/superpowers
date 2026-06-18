@@ -3,7 +3,7 @@ export type Transport = 'stdio' | 'sse';
 
 // Server auth config
 export interface ServerAuth {
-  type: 'bearer' | 'basic' | 'api_key';
+  type: 'bearer' | 'api_key';
   token_env?: string;
 }
 
@@ -14,7 +14,7 @@ export interface ServerConfig {
   command?: string[];      // stdio only
   url?: string;            // sse only
   auth?: ServerAuth;
-  tools?: string[];    // if omitted, expose all tools from this server
+  tools: string[];     // empty array means "expose all tools" (populated at connect time)
   tags: string[];
 }
 

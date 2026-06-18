@@ -9,7 +9,7 @@ function makeConfig(servers: Partial<ServerConfig>[]): ProxyConfig {
     command: s.command,
     url: s.url,
     auth: s.auth,
-    tools: s.tools,
+    tools: s.tools ?? [],
     tags: s.tags ?? [],
   }));
 

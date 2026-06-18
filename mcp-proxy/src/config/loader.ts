@@ -6,7 +6,7 @@ import type { ProxyConfig } from '../types';
 // Zod schema definitions
 
 const ServerAuthSchema = z.object({
-  type: z.enum(['bearer', 'basic', 'api_key']),
+  type: z.enum(['bearer', 'api_key']),
   token_env: z.string().optional(),
 });
 
@@ -16,19 +16,19 @@ const ServerConfigSchema = z.object({
   command: z.array(z.string()).optional(),
   url: z.string().optional(),
   auth: ServerAuthSchema.optional(),
-  tools: z.array(z.string()).optional(),
+  tools: z.array(z.string()).optional().default([]),
   tags: z.array(z.string()).default([]),
 });
 
 const LLMPruneConfigSchema = z.object({
-  enabled: z.boolean(),
+  enabled: z.boolean().default(false),
   threshold: z.number().default(20),
-  model: z.string(),
-  api_key_env: z.string(),
+  model: z.string().default(''),
+  api_key_env: z.string().default(''),
 });
 
 const RouterConfigSchema = z.object({
-  llm_prune: LLMPruneConfigSchema,
+  llm_prune: LLMPruneConfigSchema.default({}),
 });
 
 const ProxyAuthConfigSchema = z.object({
@@ -44,7 +44,7 @@ const ProxySettingsSchema = z.object({
 
 const ProxyConfigSchema = z.object({
   servers: z.array(ServerConfigSchema),
-  router: RouterConfigSchema,
+  router: RouterConfigSchema.default({}),
   proxy: ProxySettingsSchema,
 });
 

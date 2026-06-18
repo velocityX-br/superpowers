@@ -58,12 +58,6 @@ servers:
     transport: stdio
     command: ["node", "server.js"]
 
-router:
-  llm_prune:
-    enabled: false
-    model: "claude-haiku-4-5"
-    api_key_env: ANTHROPIC_API_KEY
-
 proxy: {}
 `;
 
@@ -128,6 +122,18 @@ describe('loadConfig', () => {
     it('applies default threshold of 20', () => {
       const config = loadConfig(tmpFile);
       expect(config.router.llm_prune.threshold).toBe(20);
+    });
+
+    it('applies default router with llm_prune disabled when router is omitted', () => {
+      const config = loadConfig(tmpFile);
+      expect(config.router.llm_prune.enabled).toBe(false);
+      expect(config.router.llm_prune.model).toBe('');
+      expect(config.router.llm_prune.api_key_env).toBe('');
+    });
+
+    it('applies default tools of [] when not specified', () => {
+      const config = loadConfig(tmpFile);
+      expect(config.servers[0].tools).toEqual([]);
     });
 
     it('applies default mcp_port of 3000', () => {

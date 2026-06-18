@@ -100,6 +100,11 @@ describe('loadConfig', () => {
       expect(config.router.llm_prune.api_key_env).toBe('ANTHROPIC_API_KEY');
     });
 
+    it('rules are undefined when not specified in config', () => {
+      const config = loadConfig(tmpFile);
+      expect(config.router.rules).toBeUndefined();
+    });
+
     it('parses proxy config', () => {
       const config = loadConfig(tmpFile);
       expect(config.proxy.mcp_port).toBe(4000);
@@ -154,6 +159,41 @@ describe('loadConfig', () => {
     it('does not include proxy.auth when not specified', () => {
       const config = loadConfig(tmpFile);
       expect(config.proxy.auth).toBeUndefined();
+    });
+  });
+
+  describe('router.rules loaded from config', () => {
+    const RULES_CONFIG_YAML = `
+servers:
+  - name: github
+    transport: sse
+    url: "https://mcp.github.com/sse"
+    tags: ["code", "vcs"]
+
+router:
+  rules:
+    - toolPattern: "^create_.*"
+      serverName: github
+    - tags: ["file"]
+      serverName: filesystem
+
+proxy: {}
+`;
+    let tmpFile: string;
+
+    beforeAll(() => {
+      tmpFile = writeTempYaml(RULES_CONFIG_YAML);
+    });
+
+    afterAll(() => {
+      removeTempFile(tmpFile);
+    });
+
+    it('loads router.rules and preserves all rule fields', () => {
+      const config = loadConfig(tmpFile);
+      expect(config.router.rules).toHaveLength(2);
+      expect(config.router.rules![0]).toEqual({ toolPattern: '^create_.*', serverName: 'github' });
+      expect(config.router.rules![1]).toEqual({ tags: ['file'], serverName: 'filesystem' });
     });
   });
 

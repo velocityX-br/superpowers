@@ -15,6 +15,11 @@ servers:
     tags: ["code", "vcs"]
 
 router:
+  rules:
+    - toolPattern: "^create_.*"
+      serverName: github
+    - tags: ["file"]
+      serverName: filesystem
   llm_prune:
     enabled: true
     threshold: 20

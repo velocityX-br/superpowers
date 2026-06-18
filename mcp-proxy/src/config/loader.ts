@@ -42,8 +42,15 @@ const LLMPruneConfigSchema = z.object({
   api_key_env: z.string().optional(),
 });
 
+const RoutingRuleSchema = z.object({
+  serverName: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  toolPattern: z.string().optional(),
+});
+
 const RouterConfigSchema = z.object({
   llm_prune: LLMPruneConfigSchema.default({}),
+  rules: z.array(RoutingRuleSchema).optional(),
 });
 
 const ProxyAuthConfigSchema = z.object({

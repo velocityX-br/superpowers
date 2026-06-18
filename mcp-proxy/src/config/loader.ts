@@ -16,15 +16,30 @@ const ServerConfigSchema = z.object({
   command: z.array(z.string()).optional(),
   url: z.string().optional(),
   auth: ServerAuthSchema.optional(),
-  tools: z.array(z.string()).optional().default([]),
+  tools: z.array(z.string()).default([]),
   tags: z.array(z.string()).default([]),
+}).superRefine((data, ctx) => {
+  if (data.transport === 'stdio' && (!data.command || data.command.length === 0)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['command'],
+      message: 'command is required when transport is "stdio"',
+    });
+  }
+  if (data.transport === 'sse' && !data.url) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['url'],
+      message: 'url is required when transport is "sse"',
+    });
+  }
 });
 
 const LLMPruneConfigSchema = z.object({
   enabled: z.boolean().default(false),
   threshold: z.number().default(20),
-  model: z.string().default(''),
-  api_key_env: z.string().default(''),
+  model: z.string().optional(),
+  api_key_env: z.string().optional(),
 });
 
 const RouterConfigSchema = z.object({
@@ -74,5 +89,6 @@ export function loadConfig(filePath: string): ProxyConfig {
   }
 
   // 4. Return typed config (zod output already has defaults applied)
-  return result.data as ProxyConfig;
+  const config: ProxyConfig = result.data;
+  return config;
 }

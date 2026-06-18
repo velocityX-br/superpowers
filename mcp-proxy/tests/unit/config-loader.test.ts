@@ -127,8 +127,8 @@ describe('loadConfig', () => {
     it('applies default router with llm_prune disabled when router is omitted', () => {
       const config = loadConfig(tmpFile);
       expect(config.router.llm_prune.enabled).toBe(false);
-      expect(config.router.llm_prune.model).toBe('');
-      expect(config.router.llm_prune.api_key_env).toBe('');
+      expect(config.router.llm_prune.model).toBeUndefined();
+      expect(config.router.llm_prune.api_key_env).toBeUndefined();
     });
 
     it('applies default tools of [] when not specified', () => {
@@ -221,6 +221,55 @@ proxy: {}
       const tmpFile = writeTempYaml(invalidYaml);
       try {
         expect(() => loadConfig(tmpFile)).toThrow(/^Config validation error:/);
+      } finally {
+        removeTempFile(tmpFile);
+      }
+    });
+
+    it('throws validation error when transport is stdio and command is missing', () => {
+      const invalidYaml = `
+servers:
+  - name: myserver
+    transport: stdio
+
+proxy: {}
+`;
+      const tmpFile = writeTempYaml(invalidYaml);
+      try {
+        expect(() => loadConfig(tmpFile)).toThrow(/command is required when transport is "stdio"/);
+      } finally {
+        removeTempFile(tmpFile);
+      }
+    });
+
+    it('throws validation error when transport is stdio and command is empty array', () => {
+      const invalidYaml = `
+servers:
+  - name: myserver
+    transport: stdio
+    command: []
+
+proxy: {}
+`;
+      const tmpFile = writeTempYaml(invalidYaml);
+      try {
+        expect(() => loadConfig(tmpFile)).toThrow(/command is required when transport is "stdio"/);
+      } finally {
+        removeTempFile(tmpFile);
+      }
+    });
+
+    it('throws validation error when transport is sse and url is missing', () => {
+      const invalidYaml = `
+servers:
+  - name: myserver
+    transport: sse
+
+proxy: {}
+`;
+      const tmpFile = writeTempYaml(invalidYaml);
+      try {
+        expect(() => loadConfig(tmpFile)).toThrow(/url is required when transport is "sse"/);
       } finally {
         removeTempFile(tmpFile);
       }

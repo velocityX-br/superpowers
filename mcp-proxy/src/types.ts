@@ -22,8 +22,8 @@ export interface ServerConfig {
 export interface LLMPruneConfig {
   enabled: boolean;
   threshold: number;       // default 20
-  model: string;           // e.g. claude-haiku-4-5-20251001
-  api_key_env: string;
+  model?: string;          // e.g. claude-haiku-4-5-20251001
+  api_key_env?: string;
 }
 
 export interface RouterConfig {

@@ -26,8 +26,16 @@ export interface LLMPruneConfig {
   api_key_env?: string;
 }
 
+// Routing rule (used by Layer C / rule-match)
+export interface RoutingRule {
+  serverName?: string;   // route to a specific server
+  tags?: string[];       // route if the tool's server has all these tags
+  toolPattern?: string;  // route if tool name matches this regex
+}
+
 export interface RouterConfig {
   llm_prune: LLMPruneConfig;
+  rules?: RoutingRule[];   // optional Layer C rules, evaluated in order
 }
 
 // Proxy config
